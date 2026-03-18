@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinSight — Smart Finance Manager</title>
+<!-- External Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">Fin<span>Sight</span></div>
+    <button class="nav-item active" onclick="showPage('dashboard')"><span class="icon">◈</span> Dashboard</button>
+    <button class="nav-item" onclick="showPage('transactions')"><span class="icon">⇄</span> Transactions</button>
+    <button class="nav-item" onclick="showPage('budget')"><span class="icon">◎</span> Budget</button>
+    <button class="nav-item" onclick="showPage('insights')"><span class="icon">✦</span> AI Insights</button>
+    <!-- Sidebar Branding Removed -->
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard">
+      <div class="topbar">
+        <div class="page-header">
+          <div class="page-title">Good morning, Priyan 👋</div>
+          <div class="page-date" id="today-date"></div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Transaction</button>
+      </div>
+      <div class="page">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-hd">
+              <div><div class="section-title">Spending Overview</div><div class="section-sub">Monthly trend</div></div>
+              <div class="tabs" style="margin:0">
+                <button class="tab active" onclick="switchChart('monthly',this)">Monthly</button>
+                <button class="tab" onclick="switchChart('weekly',this)">Weekly</button>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:220px"><canvas id="spending-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="section-hd"><div><div class="section-title">Category Breakdown</div><div class="section-sub">This month</div></div></div>
+            <div class="chart-wrap" style="height:180px"><canvas id="cat-chart"></canvas></div>
+            <div id="cat-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px;"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-hd"><div class="section-title">Recent Transactions</div><a href="#" onclick="showPage('transactions');return false" style="font-size:12px;color:var(--accent2);text-decoration:none">View all →</a></div>
+            <table class="tx-table" id="recent-tx"></table>
+          </div>
+          <div>
+            <div class="ai-box" style="margin-bottom:20px">
+              <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">AI Insight</div></div>
+              <div class="ai-text" id="quick-insight">Loading insights…</div>
+            </div>
+            <div class="card">
+              <div class="section-hd"><div class="section-title">Budget Health</div></div>
+              <div id="budget-mini"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div id="page-transactions" style="display:none">
+      <div class="topbar">
+        <div class="page-header"><div class="page-title">Transactions</div><div class="page-date">All your spending, organized</div></div>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Transaction</button>
+      </div>
+      <div class="page" style="margin-top:24px">
+        <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+          <input id="search-tx" oninput="renderTxPage()" placeholder="🔍  Search transactions…" style="background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:9px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:280px">
+          <select id="filter-cat" onchange="renderTxPage()" style="background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:9px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+            <option value="">All categories</option>
+          </select>
+          <select id="filter-type" onchange="renderTxPage()" style="background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:9px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+            <option value="">All types</option>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div class="card">
+          <table class="tx-table" id="full-tx-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div id="page-budget" style="display:none">
+      <div class="topbar">
+        <div class="page-header"><div class="page-title">Budget Tracker</div><div class="page-date">Monthly limits & actuals</div></div>
+      </div>
+      <div class="page" style="margin-top:24px">
+        <div id="alert-zone" style="margin-bottom:16px"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-hd"><div class="section-title">Category Budgets</div></div>
+            <div id="budget-bars"></div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="section-hd"><div class="section-title">Savings Rate</div></div>
+              <div style="text-align:center;padding:20px 0">
+                <div style="font-size:48px;font-weight:700;color:var(--green)" id="savings-pct">—</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:6px">of income saved this month</div>
+              </div>
+              <div class="chart-wrap" style="height:120px"><canvas id="savings-chart"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="section-hd"><div class="section-title">Top Spending Days</div></div>
+              <div id="top-days"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHTS -->
+    <div id="page-insights" style="display:none">
+      <div class="topbar">
+        <!-- Changed "Powered by Claude" to "Smart Analysis" -->
+        <div class="page-header"><div class="page-title">AI Financial Insights</div><div class="page-date">Smart Analysis</div></div>
+      </div>
+      <div class="page" style="margin-top:24px">
+        <div class="grid-2">
+          <div>
+            <div class="ai-box" style="margin-bottom:20px">
+              <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Full Analysis</div><div id="ai-loader" style="margin-left:auto"></div></div>
+              <div class="ai-text" id="full-insight">Click "Generate Insights" to get personalized AI analysis of your finances.</div>
+              <button class="btn btn-primary" style="margin-top:16px" onclick="generateFullInsights()">✦ Generate Insights</button>
+            </div>
+            <div class="card">
+              <div class="section-hd"><div class="section-title">Ask AI Anything</div></div>
+              <div id="chat-history" style="min-height:80px;max-height:240px;overflow-y:auto;margin-bottom:14px;font-size:13px;line-height:1.6"></div>
+              <div style="display:flex;gap:10px">
+                <input id="ai-question" placeholder="e.g. How can I save more on food?" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')askAI()">
+                <button class="btn btn-primary" onclick="askAI()">Ask</button>
+              </div>
+              <div class="tag-row">
+                <span class="tag" style="background:rgba(108,99,255,0.12);color:var(--accent2)" onclick="document.getElementById('ai-question').value='Where am I overspending?';askAI()">Where am I overspending?</span>
+                <span class="tag" style="background:rgba(45,212,191,0.1);color:var(--teal)" onclick="document.getElementById('ai-question').value='Give me 3 saving tips';askAI()">3 saving tips</span>
+                <span class="tag" style="background:rgba(251,191,36,0.1);color:var(--amber)" onclick="document.getElementById('ai-question').value='Predict my end of month balance';askAI()">Predict balance</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="section-hd"><div class="section-title">Smart Alerts</div></div>
+              <div id="smart-alerts"></div>
+            </div>
+            <div class="card">
+              <div class="section-hd"><div class="section-title">Spending Forecast</div></div>
+              <div class="chart-wrap" style="height:200px"><canvas id="forecast-chart"></canvas></div>
+              <div style="font-size:11px;color:var(--muted);margin-top:10px">📈 Dashed line shows AI-predicted trend</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Add Transaction</div>
+    <div class="form-row">
+      <div class="field"><label>Description</label><input id="f-desc" placeholder="e.g. Grocery shopping"></div>
+      <div class="field"><label>Amount (₹)</label><input id="f-amt" type="number" placeholder="0.00"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Category</label>
+        <select id="f-cat">
+          <option value="Food">🍔 Food & Dining</option>
+          <option value="Transport">🚗 Transport</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Entertainment">🎬 Entertainment</option>
+          <option value="Health">💊 Health</option>
+          <option value="Utilities">💡 Utilities</option>
+          <option value="Income">💰 Income</option>
+          <option value="Other">📦 Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Date</label><input id="f-date" type="date"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Type</label>
+        <select id="f-type">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addTransaction()">Add Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom JS -->
+<script src="script.js"></script>
+</body>
+</html>
